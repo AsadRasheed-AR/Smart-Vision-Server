@@ -15,22 +15,30 @@ from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
+#Import request Controller Module
+from Modules.Controllers.requestController import reqController
+
 
 class camController:
     
-    def __init__(self,object_detect,camSource=0,resolution=(320,240),vs=None,showProcessedVideo=False):
+    def __init__(self,object_detect,rc_obj,camSource=0,resolution=(320,240),vs=None,showProcessedVideo=False):
         self.vsObj = vs
         self.camSource = camSource
         self.resolution = resolution
         self.outputFrame = None
         self.currentFrame = None
-        # self.showProcessedVideo = showProcessedVideo
-        self.showProcessedVideo = True
+        self.showProcessedVideo = showProcessedVideo
+        # self.showProcessedVideo = True
         self.lock = threading.Lock()
 
         #Model to Detect Objects
         self.object_detect = object_detect
         # self.object_detect.load(engine=edgeiq.Engine.DNN)
+
+        #For Request Controller to control Status of Switches
+        self.frameCounter = 0
+        self.Object_detection_count = 0
+        self.rc_obj = rc_obj
     
     def initializeCamera(self):
         _vs = VideoStream(src=self.camSource).start()
@@ -43,6 +51,11 @@ class camController:
             frame = self.vsObj.read()
             with self.lock:
                 self.currentFrame = frame.copy()
+            #For Request Controller to Control Status of Switches.
+            if (self.frameCounter == 30):
+                self.rc_obj.controlAutoStatus(self.Object_detection_count)
+                self.frameCounter = 0
+                self.Object_detection_count = 0
             
             if (not(self.showProcessedVideo)):
                 with self.lock:
@@ -80,6 +93,11 @@ class camController:
                 instance_masks=output_dict.get('detection_masks_reframed', None),
                 use_normalized_coordinates=True,
                 line_thickness=8)
+            
+            #For Request Controller to Control Status of Switches.
+            if (self.frameCounter < 30):
+                self.frameCounter += 1
+                self.Object_detection_count += 1 if (output_dict['detection_scores'][0] > 0.60) else 0
                     
             if (self.showProcessedVideo):
                 with self.lock:

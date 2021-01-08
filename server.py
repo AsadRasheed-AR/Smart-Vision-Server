@@ -92,11 +92,11 @@ model = tf.saved_model.load(model_path)
 model = model.signatures['serving_default']
 
 #initialize Controllers
-cc = camController(object_detect=model)
+rc = reqController()
+
+cc = camController(object_detect=model,rc_obj=rc)
 cc.initializeCamera()
 cc.startAsyncOperations()
-
-rc = reqController()
 
 
 
