@@ -3,6 +3,7 @@
 #Controller Modules
 from Modules.Controllers.cameraController import camController
 from Modules.Controllers.requestController import reqController
+from Modules.Controllers.nodemcuController import espController
 
 #Libraries for webServer
 from flask import Response
@@ -93,6 +94,9 @@ model = model.signatures['serving_default']
 
 #initialize Controllers
 rc = reqController()
+
+nc = espController(rc_obj=rc)
+nc.startAsyncOperations()
 
 cc = camController(object_detect=model,rc_obj=rc)
 cc.initializeCamera()

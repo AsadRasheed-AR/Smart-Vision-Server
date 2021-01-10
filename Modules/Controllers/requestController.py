@@ -1,7 +1,7 @@
 class reqController:
 
     def __init__(self,
-    currentStatus = {"Btn1_status" : False , "Btn2_status" : False , "Btn3_status" : False},
+    currentStatus = {"Btn1_status" : False , "Btn2_status" : False , "Btn3_status" : False , "esp_connected" : True},
     switch_autoControl = {"Btn1_autoControl" : True , "Btn2_autoControl" : True , "Btn3_autoControl" : True}):
         self.currentStatus = currentStatus
         self.switch_autoControl = switch_autoControl
