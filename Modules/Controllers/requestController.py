@@ -39,4 +39,4 @@ class reqController:
             btn2_status = False if (self.switch_autoControl['Btn2_autoControl']) else self.currentStatus['Btn2_status']
             Btn3_status = False if (self.switch_autoControl['Btn3_autoControl']) else self.currentStatus['Btn3_status']
         
-        self.currentStatus = {"Btn1_status" : btn1_status , "Btn2_status" : btn2_status , "Btn3_status" : Btn3_status}
+        self.currentStatus = {"Btn1_status" : btn1_status , "Btn2_status" : btn2_status , "Btn3_status" : Btn3_status , "esp_connected" : self.currentStatus["esp_connected"]}

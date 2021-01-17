@@ -8,7 +8,8 @@ class espController:
     def __init__(self,rc_obj):
         self.rc_obj = rc_obj
         self.esp_Base_Url = "https://192.168.4.1:80"
-        self.esp_setStatus_url = "https://192.168.4.1:80/setCurrentStatus"
+        # self.esp_setStatus_url = "https://192.168.4.1:80/setCurrentStatus"
+        self.esp_setStatus_url = "http://192.168.4.1:80/setCurrentStatus"
     
     def set_esp_status(self):
         while(True):
