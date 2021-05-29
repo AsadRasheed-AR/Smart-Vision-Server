@@ -9,6 +9,7 @@ from Modules.Controllers.nodemcuController import espController
 from flask import Response
 from flask import Flask,request, jsonify
 from flask import render_template
+from flask_socketio import *
 
 #Libraries for Object Detection
 from object_detection.utils import ops as utils_ops
@@ -48,7 +49,7 @@ app = Flask(__name__,
             static_folder='static',
             template_folder='templates')
 
-
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 # initialize the output frame and a lock used to ensure thread-safe
@@ -56,19 +57,6 @@ app = Flask(__name__,
 # are viewing the stream)
 outputFrame = None
 lock = threading.Lock()
-# fps = edgeiq.FPS().start()
-
-
-#Object Detection Initialization
-# obj_detect = edgeiq.ObjectDetection(
-#         "alwaysai/mobilenet_ssd")
-# obj_detect.load(engine=edgeiq.Engine.DNN)
-
-# print("Loaded model:\n{}\n".format(obj_detect.model_id))
-# print("Engine: {}".format(obj_detect.engine))
-# print("Accelerator: {}\n".format(obj_detect.accelerator))
-# print("Labels:\n{}\n".format(obj_detect.labels))
-
 
 #Load Model
 # patch tf1 into `utils.ops`
@@ -79,11 +67,6 @@ tf.gfile = tf.io.gfile
 
 #Path of Current Working Directory
 curr_path = str(pathlib.Path.cwd())
-# List of the strings that is used to add correct label for each box.
-# PATH_TO_LABELS = curr_path
-# PATH_TO_LABELS  += '/Object_Detection/Labels/label_map.pbtxt'
-# #PATH_TO_LABELS = './Object_Detection/Labels/label_map.pbtxt'
-# category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
 #Path Of Model
 model_path = curr_path
@@ -102,17 +85,7 @@ cc = camController(object_detect=model,rc_obj=rc)
 cc.initializeCamera()
 cc.startAsyncOperations()
 
-
-
-
-# initialize the video stream and allow the camera sensor to
-# warmup
-#vs = VideoStream(usePiCamera=1).start()
-# vs = VideoStream(src=0,resolution=(640,480)).start()
-# vs = FileVideoStream('demo1.mp4').start()
 vs = None
-# time.sleep(2.0)
-
 
 @app.route("/")
 def index():
@@ -160,84 +133,11 @@ def server_getVideoStatus():
 	status = cc.getVideoStatus()
 	return(status)
 
-# def detect_motion(frameCount):
-	# grab global references to the video stream, output frame, and
-	# lock variables
-	# global vs, outputFrame, lock
-	# initialize the motion detector and the total number of frames
-	# read thus far
-	# md = SingleMotionDetector(accumWeight=0.1)
-	# total = 0
-
-    	# loop over frames from the video stream
-	# while True:
-		# read the next frame from the video stream, resize it,
-		# convert the frame to grayscale, and blur it
-		# frame = vs.read()
-        # results = obj_detect.detect_objects(frame, confidence_level=.5)
-        # frame = edgeiq.markup_image(frame, results.predictions, colors=obj_detect.colors)
-		#frame = imutils.resize(frame, width=400)
-		# results = obj_detect.detect_objects(frame, confidence_level=.5)
-		# predictions = edgeiq.filter_predictions_by_label(results.predictions,['person'])
-		# frame = edgeiq.markup_image(
-                        # frame, predictions, colors=obj_detect.colors)
-		# gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		# gray = cv2.GaussianBlur(gray, (7, 7), 0)
-		# # grab the current timestamp and draw it on the frame
-		# timestamp = datetime.datetime.now()
-		# cv2.putText(frame, timestamp.strftime(
-		# 	"%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0] - 10),
-		# 	cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
-        
-        # results = obj_detect.detect_objects(frame,confidence_level=.5)
-        # frame = edgeiq.markup_image(frame,results.predictions,colors=obj_detect.colors)
-
-        # Generate text to display on streamer
-        # for prediction in results.predictions:
-        #     text.append("{}: {:2.2f}%".format(prediction.label, prediction.confidence * 100))
-        
-
-        # if the total number of frames has reached a sufficient
-		# number to construct a reasonable background model, then
-		# continue to process the frame
-		# if total > frameCount:
-		# 	# detect motion in the image
-		# 	motion = md.detect(gray)
-		# 	# check to see if motion was found in the frame
-		# 	if motion is not None:
-		# 		# unpack the tuple and draw the box surrounding the
-		# 		# "motion area" on the output frame
-		# 		(thresh, (minX, minY, maxX, maxY)) = motion
-		# 		cv2.rectangle(frame, (minX, minY), (maxX, maxY),
-		# 			(0, 0, 255), 2)
-		
-		# # update the background model and increment the total number
-		# # of frames read thus far
-		# md.update(gray)
-		# total += 1
-		# acquire the lock, set the output frame, and release the
-		# lock
-		# frame = cc.getOutputFrame()
-		# with lock:
-			# outputFrame = frame.copy()
-
-
 def generate():
 	# grab global references to the output frame and lock variables
 	global outputFrame, lock
 	# loop over frames from the output stream
 	while True:
-		# wait until the lock is acquired
-		# with lock:
-			# check if the output frame is available, otherwise skip
-			# the iteration of the loop
-			# if outputFrame is None:
-			# 	continue
-			# encode the frame in JPEG format
-			# (flag, encodedImage) = cv2.imencode(".jpg", outputFrame)
-			# ensure the frame was successfully encoded
-			# if not flag:
-			# 	continue
 		# yield the output frame in the byte format
 		frame = cc.getOutputFrame()
 		if frame is None:
@@ -245,8 +145,6 @@ def generate():
 		(flag,encodedImage) = cv2.imencode(".jpg",frame)
 		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
 			bytearray(encodedImage) + b'\r\n')
-		# fps.update()
-		# yield(outputFrame)
 
 
 @app.route("/video_feed")
@@ -268,20 +166,10 @@ if __name__ == '__main__':
 	ap.add_argument("-f", "--frame-count", type=int, default=32,
 		help="# of frames used to construct the background model")
 	args = vars(ap.parse_args())
-
 	
+	socketio.run(app,host=args["ip"], port=args["port"], debug=True,
+		 use_reloader=False)
 
-	# start a thread that will perform motion detection
-	# t = threading.Thread(target=detect_motion, args=(
-	# 	args["frame_count"],))
-	# t.daemon = True
-	# t.start()
-	# start the flask app
-	app.run(host=args["ip"], port=args["port"], debug=True,
-		threaded=True, use_reloader=False)
-# release the video stream pointer
-# vs.stop()
-# fps.stop()
 print("elapsed time: {:.2f}".format(fps.get_elapsed_seconds()))
 print("approx. FPS: {:.2f}".format(fps.compute_fps()))
 cc.stop()
