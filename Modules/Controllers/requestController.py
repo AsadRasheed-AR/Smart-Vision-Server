@@ -30,13 +30,13 @@ class reqController:
         return (self.switch_autoControl)
     
     def controlAutoStatus(self,object_count):
-        if (object_count > 20):
-            btn1_status = True if (self.switch_autoControl['Btn1_autoControl']) else self.currentStatus['Btn1_status']
-            btn2_status = True if (self.switch_autoControl['Btn2_autoControl']) else self.currentStatus['Btn2_status']
-            Btn3_status = True if (self.switch_autoControl['Btn3_autoControl']) else self.currentStatus['Btn3_status'] 
-        else :
+        if (object_count < 7):
             btn1_status = False if (self.switch_autoControl['Btn1_autoControl']) else self.currentStatus['Btn1_status']
             btn2_status = False if (self.switch_autoControl['Btn2_autoControl']) else self.currentStatus['Btn2_status']
-            Btn3_status = False if (self.switch_autoControl['Btn3_autoControl']) else self.currentStatus['Btn3_status']
+            Btn3_status = False if (self.switch_autoControl['Btn3_autoControl']) else self.currentStatus['Btn3_status'] 
+        else :
+            btn1_status = True if (self.switch_autoControl['Btn1_autoControl']) else self.currentStatus['Btn1_status']
+            btn2_status = True if (self.switch_autoControl['Btn2_autoControl']) else self.currentStatus['Btn2_status']
+            Btn3_status = True if (self.switch_autoControl['Btn3_autoControl']) else self.currentStatus['Btn3_status']
         
         self.currentStatus = {"Btn1_status" : btn1_status , "Btn2_status" : btn2_status , "Btn3_status" : Btn3_status , "esp_connected" : self.currentStatus["esp_connected"]}
